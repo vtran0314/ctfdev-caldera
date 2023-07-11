@@ -1,6 +1,6 @@
 #!/bin/bash
 PORT = ""
-DICORD_UID = ""
+DISCORD_UID = ""
 
 IFS=" " real -p "Input port and discord's uid: " PORT DISCORD_UID 
     
@@ -10,4 +10,4 @@ server="http://host.docker.internal:${PORT}"
 
 curl -s -X POST -H "file:sandcat.go" -H "platform:linux" $server/file/download > ${DISCORD_UID};
 chmod +x DICORD_UID;
-./DICORD_UID -server $server -v
+./DISCORD_UID -server $server -v
