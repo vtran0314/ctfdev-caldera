@@ -1,13 +1,13 @@
 #!/bin/bash
+PORT = ""
+DICORD_UID = ""
 
-#set up manx-agent
-    echo "Setting up manx-agent"
-    server="http://127.0.0.1:58288"
-    socket="127.0.0.1:58210"
-    #contact="tcp"
+IFS=" " real -p "Input port and discord's uid: " PORT DISCORD_UID 
     
-    curl -s -X POST -H "file:manx.go" -H "platform:linux" $server/file/download > manx;
-    chmod +x manx;
-    ./manx -http $server -socket $socket -contact tcp -v
+#set up sandcat-agent
+echo "Setting up sandcat-agent"
+server="http://host.docker.internal:${PORT}"
 
-
+curl -s -X POST -H "file:sandcat.go" -H "platform:linux" $server/file/download > ${DISCORD_UID};
+chmod +x DICORD_UID;
+./DICORD_UID -server $server -v
