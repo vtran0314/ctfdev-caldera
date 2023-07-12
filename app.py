@@ -4,198 +4,188 @@ import re
 import os
 import shutil
 import subprocess
-#from flask import Flask
+import requests
+import logging
+import json
+import pathlib
+import settings
+from flask import jsonify
+#from flask import Flask, jsonify
+#from flask_cors import CORS
 
-#app = Flask(__name__)
-#@app.route('/check-port')
+# app = Flask(__name__)
+# CORS(app)
+logger = settings.logging.getLogger(__name__)
 
-WORK_DIR = subprocess.check_output('pwd').decode('utf-8').strip()
+class CalderaServer:
+    def __init__(self):
+        self.WORK_DIR = pathlib.Path(__file__).parent
+        self.status = False
+        self.next_dir = None
 
+    def preparation(self):
+        self.status = False
+        self.create_sv_directory()
+        self.copy_sv_directory()
+        self.start()
 
-def prep_caldera_server():
-    global CALDERA_SERVER_STATUS
-    CALDERA_SERVER_STATUS = False
-    # Check if the ctf-servers directory exists
-    if not os.path.isdir('ctf-servers'):
-        os.mkdir('ctf-servers')
+    def create_sv_directory(self):
+        if not os.path.isdir('ctf-servers'):
+            os.mkdir('ctf-servers')
+
+        server_dirs = os.listdir('ctf-servers')
+        server_nums = [int(d.split('_')[1]) for d in server_dirs if d.startswith('server_')]
+
+        if len(server_nums) == 0:
+            next_num = 1
+        else:
+            next_num = max(server_nums) + 1
+
+        self.next_dir = f'server_{next_num}'
+        os.mkdir(os.path.join('ctf-servers', self.next_dir))
+
+    def copy_sv_directory(self):
+        shutil.copytree('caldera-lightweight', os.path.join('ctf-servers', self.next_dir, 'caldera-lightweight'))
+        shutil.copy('caldera-lightweight/conf/default.yml', os.path.join('ctf-servers', self.next_dir, 'caldera-lightweight', 'conf', 'default.yml'))
+
+    #Generate new API key by restart the caldera server without --fresh or --insecure flag. 
+    #Also, ensure to remove the local.yml file
+    def operation(self):
+        url = f"http://0.0.0.0:{find_port.get_port}/api/v2/operations"
+        headers = {
+        'Content-Type': 'application/json',
+        'KEY': 'FsZj64pZezhcHyZRS3QRg27xjY20J5ID7buaanRVwe4'
+        }
+        data = {
+        'name': 'test',
+        'group': 'red',
+        'adversary': {'adversary_id': '01d77744-2515-401a-a497-d9f7241aac3c'},
+        'auto_close': False,
+        'state': 'running',
+        'autonomous': 1,
+        'planner': {'id': '788107d5-dc1e-4204-9269-38df0186d3e7'},
+        'source': {'id': 'ed32b9c3-9593-4c33-b0db-e2007315096b'},
+        'use_learning_parsers': True,
+        'obfuscator': 'plain-text',
+        'jitter': '2/8',
+        'visibility': '51'}
         
-    # Get a list of existing server directories and their numbers
-    server_dirs = os.listdir('ctf-servers')
-    server_nums = [int(d.split('_')[1]) for d in server_dirs if d.startswith('server_')]
-    
-    # If no server directory exists, create the first one
-    if len(server_nums) == 0:
-        next_num = 1
-        next_dir = f'server_{next_num}'
-        os.mkdir(os.path.join('ctf-servers', next_dir))
+        response = requests.post(url, headers=headers, data=json.dumps(data))
+
+        if response.status_code == 200:
+            logger.info('Request successful!')
+            logger.info(response.json())
+        else:
+            logger.error('Request failed with status code: %d', response.status_code)
+
+
+    def start(self):
+        server_path = os.path.join("ctf-servers", self.next_dir, "caldera-lightweight")
+        os.chdir(server_path)
+        cmd = "python3 server.py --fresh --insecure"
+        process = subprocess.Popen(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.DEVNULL)
+
+        while True:
+            output = process.stderr.readline().decode('utf-8').strip()
+            logging.error(output)
+            if output == '' and process.poll() is not None:
+                break
+            if 'All systems ready.' in output:
+                self.status = True
+                return self.status
+            logging.error(self.status)
+        return self.status
+
+'''
+To-do:
+    *Check if docker exist.
+    *Get discord UID from env file
+    *Get docker id or docker name. 
+'''
+class UbuntuClient:
+    def start_docker(self, port, discord_uid, DOCKER_ID):
+        cmd = f'docker exec {DOCKER_ID} /usr/src/app/setup.sh {port} {discord_uid}'
+        subprocess.run(cmd.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+class FindPort:
+    def __init__(self):
+        self.open_port = []
+        self.port = 0
+
+    def get_port(self):
+        self.find_open_ports()
+        self.generate_random_port()
+        return self.set_config()
+
+
+    def find_open_ports(self):
+        for port in range(30000, 65536):
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(0.1)
+                result = sock.connect_ex(('localhost', port))
+                if result == 0:
+                    self.open_port.append(port)
+                sock.close()
+            except:
+                pass
+
+    def generate_random_port(self):
+        while True:
+            self.port = random.randint(300, 650) * 100
+            if self.port not in self.open_port:
+                break
+
+    def set_config(self):
         
-    # If server directories exist, find the next available number and create the directory
-    else:
-        next_num = max(server_nums) + 1
-        next_dir = f'server_{next_num}'
-        os.mkdir(os.path.join('ctf-servers', next_dir))
-    
-    # # Copy the caldera_server folder into the new server directory
-    shutil.copytree('caldera_server', os.path.join('ctf-servers', next_dir, 'caldera-server'))
-    
-    # # Copy the default.yml file to the new server directory
-    shutil.copy('default.yml', os.path.join('ctf-servers', next_dir, 'caldera-server', 'conf', 'default.yml'))
-
-    # Start the caldera server
-    server_path = os.path.join("ctf-servers", next_dir, "caldera-server")
-    os.chdir(server_path)
-    #os.system('pwd')
-    cmd = "python3 server.py --insecure"
-    #subprocess.Popen(cmd.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    #print("Running process")
-    process = subprocess.Popen(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.DEVNULL)
-    
-    # Use communicate to read the output from the subprocess
-    while True:
-        output = process.stderr.readline().decode('utf-8').strip()
-        #print(output)
-        if output == '' and process.poll() is not None:
-            break
-        if 'All systems ready.' in output:
-            CALDERA_SERVER_STATUS = True
-            return CALDERA_SERVER_STATUS
-    
-    return CALDERA_SERVER_STATUS
-    
-def prep_docker_ubuntu(http, tcp):
-    
-    #print("prep_docker_ubuntu..........")
-    os.chdir(WORK_DIR)
-    #os.system('pwd')
-
-    #print("modifying setup.sh file")
-    with open('./ubuntu/setup.sh', 'r') as f:
-        file_str = f.read()
-
-    patterns = [
-        (r'server\s*=\s*.*$', f'server="http://host.docker.internal:{http}"'),
-        (r'socket\s*=\s*.*$', f'socket="host.docker.internal:{tcp}"') 
-    ]
-
-    for pattern, replacement in patterns:
-        file_str = re.sub(pattern, replacement, file_str, flags=re.MULTILINE)
-
-#Write the modified string back to the setup.sh file
-    with open('./ubuntu/setup.sh', 'w') as f:
-        f.write(file_str)
-
-    #print("Done!!!!")
-
-    #print("modifying Dockerfile................")
-    with open('./ubuntu/Dockerfile', 'r') as f:
-        file_str = f.read()
-
-    patterns = [
-        (r'EXPOSE\s.*$', f'EXPOSE {http}') 
-    ]   
-
-    for pattern, replacement in patterns:
-        file_str = re.sub(pattern, replacement, file_str, flags=re.MULTILINE)
-
-    # Write the modified string back to the setup.sh file
-    with open('./ubuntu/Dockerfile', 'w') as f:
-        f.write(file_str)
-    
-    dockerImages = subprocess.check_output(['docker', 'images', '-a']).decode('utf-8')
-    #print(dockerImages)
-
-    dockerImages_nums = [
-        int(re.search(r'^ubuntuimages-(\d+)', d).group(1))
-        for d in dockerImages.split('\n')
-        if re.match(r'^ubuntuimages-\d+', d)
-    ]
-    # dockerImages_nums = [int(d.split('-')[1]) for d in dockerImages.split('\n') if re.match(r'ubuntuimages-\d+', d)]
-
-    # dockerImages_nums = [int(d.split('-')[1]) for d in dockerImages.split('\n') if d.startswith('ubuntuimages-')]
-    #print(dockerImages_nums)
-    if len(dockerImages_nums) == 0:
-        next_num = 1
-        next_img = f'ubuntuimages-{next_num}'
-        dockerBuild = f'docker build -t {next_img}:latest ./ubuntu/'
-        #print(dockerBuild)
-        subprocess.Popen(dockerBuild.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).wait()
-
-        dockerRun = f'docker run -d --network=host {next_img}:latest'
-        #print(dockerRun)
-        subprocess.run(dockerRun.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-    else:
-        next_num = max(dockerImages_nums) + 1
-        next_img = f'ubuntuimages-{next_num}'
-        dockerBuild = f'docker build -t {next_img}:latest ./ubuntu/'
-        #print(dockerBuild)
-        subprocess.Popen(dockerBuild.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).wait()
-
-        dockerRun = f'docker run -d --network=host {next_img}:latest'
-        ##print(dockerRun)
-        subprocess.run(dockerRun.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-
-def check_port():
-    OPEN_PORT = []
-    PORT = 0
-    
-    for port in range(1, 65536):
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(0.1)
-            result = sock.connect_ex(('localhost', port))
-            if result == 0:
-                OPEN_PORT.append(port)
-            sock.close()
-        except:
-            pass
-
-    while True:
-        PORT = random.randint(300, 650) * 100
-        if PORT not in OPEN_PORT:
-            break
+        config_file = settings.CALD_CONFIG_DIR / "default.yml"
         
-    with open('caldera_server/conf/default.yml', 'r') as f:
-        file_str = f.read()
-    
-    DNS_PORT= PORT + 53
-    HTTP_PORT = PORT + 88
-    SSH_PORT = PORT + 222
-    FTP_PORT = PORT + 22
-    TCP_PORT = PORT + 10
-    UDP_PORT = PORT + 11
-    WS_PORT = PORT + 12
+        with open(config_file, 'r') as f:
+            file_str = f.read()
 
-    patterns = [
-        (r'^app\.contact\.dns\.socket:.*$', f'app.contact.dns.socket: 0.0.0.0:{DNS_PORT}'),
-        (r'^app\.contact\.http:.*$', f'app.contact.http: http://0.0.0.0:{HTTP_PORT}'),
-        (r'^app\.contact\.tunnel\.ssh\.socket:.*$', f'app.contact.tunnel.ssh.socket: 0.0.0.0:{SSH_PORT}'),
-        (r'^app\.contact\.ftp\.port:.*$', f'app.contact.ftp.port: {FTP_PORT}'),
-        (r'^app\.contact\.tcp:.*$', f'app.contact.tcp: 0.0.0.0:{TCP_PORT}'),
-        (r'^app\.contact\.udp:.*$', f'app.contact.udp: 0.0.0.0:{UDP_PORT}'),
-        (r'^app\.contact\.websocket:.*$', f'app.contact.websocket: 0.0.0.0:{WS_PORT}'),
-        (r'^port:.*$', f'port: {HTTP_PORT}')
-    ]
+        DNS_PORT = self.port + 53
+        HTTP_PORT = self.port + 88
+        SSH_PORT = self.port + 222
+        FTP_PORT = self.port + 22
+        TCP_PORT = self.port + 10
+        UDP_PORT = self.port + 11
+        WS_PORT = self.port + 12
 
-    # Use a loop to find and replace each line that matches the regular expression
-    for pattern, replacement in patterns:
-        file_str = re.sub(pattern, replacement, file_str, flags=re.MULTILINE)
+        patterns = [
+            (r'^app\.contact\.dns\.socket:.*$', f'app.contact.dns.socket: 0.0.0.0:{DNS_PORT}'),
+            (r'^app\.contact\.http:.*$', f'app.contact.http: http://0.0.0.0:{HTTP_PORT}'),
+            (r'^app\.contact\.tunnel\.ssh\.socket:.*$', f'app.contact.tunnel.ssh.socket: 0.0.0.0:{SSH_PORT}'),
+            (r'^app\.contact\.ftp\.port:.*$', f'app.contact.ftp.port: {FTP_PORT}'),
+            (r'^app\.contact\.tcp:.*$', f'app.contact.tcp: 0.0.0.0:{TCP_PORT}'),
+            (r'^app\.contact\.udp:.*$', f'app.contact.udp: 0.0.0.0:{UDP_PORT}'),
+            (r'^app\.contact\.websocket:.*$', f'app.contact.websocket: 0.0.0.0:{WS_PORT}'),
+            (r'^port:.*$', f'port: {HTTP_PORT}')
+        ]
 
-    # Write the modified string back to the default.yml file
-    with open('default.yml', 'w') as f:
-        f.write(file_str)
-    
-    #prepare server
-    prep_caldera_server()    
-    if CALDERA_SERVER_STATUS == True:
-    #     print("Starting Docker.....")
-        prep_docker_ubuntu(HTTP_PORT, TCP_PORT)
+        for pattern, replacement in patterns:
+            file_str = re.sub(pattern, replacement, file_str, flags=re.MULTILINE)
+
+        
+        with open(config_file, 'w') as f:
+            f.write(file_str)
+
+        return HTTP_PORT
+
+find_port = FindPort()
+caldera_server = CalderaServer()
+ubuntu_client = UbuntuClient()
+
+
+def run_task():
+    result = find_port.get_port()
+
+    caldera_server.preparation()
+
+    if caldera_server.status:
+        ubuntu_client.start_docker(result['HTTP_PORT'])
+        return result
     else:
-         #restart process
-         prep_caldera_server()
-    
-    #print(HTTP_PORT)
-    return str(HTTP_PORT)
+        return logger.error({'error': 'Failed to start Caldera'})
 
-print(check_port())
+if __name__ == '__main__':
+    run_task()
