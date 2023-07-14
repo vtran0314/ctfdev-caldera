@@ -1,13 +1,27 @@
 #!/bin/bash
 
-#set up manx-agent
-    echo "Setting up manx-agent"
-    server="http://host.docker.internal:42988"
-    socket="host.docker.internal:42910"
-    #contact="tcp"
-    
-    curl -s -X POST -H "file:manx.go" -H "platform:linux" $server/file/download > manx;
-    chmod +x manx;
-    ./manx -http $server -socket $socket -contact tcp -v
+PORT=""
+DISCORD_UID=""
+# Check if both arguments are provided
 
+if [[ $# -ne 2 ]]; then
+  echo "Usage: $0 <PORT> <DISCORD_UID>"
+  exit 1
+elif [[ $1 =~ ^[0-9]+$ ]]; then
+    PORT=$1
+    DISCORD_UID=$2
+else
+    PORT=$2
+    DISCORD_UID=$1
+fi 
 
+echo "The port is: $PORT"
+echo "Discord_UID is: $DISCORD_UID"
+
+# Set up sandcat-agent
+echo "Setting up sandcat-agent"
+server="http://host.docker.internal:$PORT";
+
+curl -s -X POST -H "file:sandcat.go" -H "platform:linux" "$server/file/download" > "$DISCORD_UID";
+chmod +x "$DISCORD_UID";
+./"$DISCORD_UID" -server "$server" -v

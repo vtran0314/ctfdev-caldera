@@ -1,0 +1,38 @@
+- buckets:
+  - detection
+  repeatable: false
+  additional_info: {}
+  access: {}
+  name: Acquire suspicious files
+  description: Get information from AV about suspicious files
+  requirements: []
+  privilege: ''
+  technique_id: x
+  delete_payload: true
+  tactic: detection
+  executors:
+  - cleanup: []
+    timeout: 60
+    language: null
+    code: null
+    uploads: []
+    additional_info: {}
+    name: psh
+    parsers:
+    - module: plugins.response.app.parsers.basic_strip
+      parserconfigs:
+      - source: file.malicious.hash
+        edge: ''
+        custom_parser_vals: {}
+        target: ''
+    variations: []
+    build_target: null
+    payloads: []
+    platform: windows
+    command: "if (Test-Path C:\\Users\\Public\\malicious_files.txt -PathType Leaf)\
+      \ {\n  $hashes = Get-Content C:\\Users\\Public\\malicious_files.txt -Raw;\n\
+      \  $hashes;\n}"
+  plugin: response
+  technique_name: x
+  singleton: false
+  id: 77272c88-ccf5-4225-a3d9-f9e171d1ca5b

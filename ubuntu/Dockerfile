@@ -1,8 +1,8 @@
 FROM ubuntu:latest
 
-RUN apt-get update && apt-get install curl curl net-tools iputils-ping nmap -y
+RUN apt-get update && apt-get install curl -y
 
-RUN useradd -d /home/t1548001/ -m -p manx -s /bin/sh t1548001
+RUN useradd -d /home/t1548001/ -m -p sandcat -s /bin/sh t1548001
 RUN echo "t1548001:t1548001" | chpasswd
 #RUN mkdir -p /app
 
@@ -14,9 +14,9 @@ COPY ./setup.sh .
 RUN chmod +x setup.sh
 
 RUN cp /bin/bash .
-RUN mv bash somefile
-RUN chown root:root somefile
-RUN chmod +s somefile
+RUN mv bash t1548001
+RUN chown root:root t1548001
+RUN chmod +s t1548001
 
 #RUN ./setup.sh
 #RUN chown -R root:root /home/manx
@@ -24,8 +24,14 @@ WORKDIR /home/t1548001
 USER t1548001
 #RUN /usr/src/app/setup.sh
 
-EXPOSE 42988
+#EXPOSE 61388
 
-ENTRYPOINT ["/bin/bash","-c","/usr/src/app/setup.sh"]
+#ENTRYPOINT ["/bin/bash","-c","/usr/src/app/setup.sh"]
 
-#ENTRYPOINT ["tail", "-f", "/dev/null"]
+ENTRYPOINT ["tail", "-f", "/dev/null"]
+
+#docker build . -t ctf-challenge:development
+
+#docker run -d --name ctf-challenge -it ctf-challenge:development
+
+#docker exec -it ctf-challenge /usr/src/app/setup.sh 50188 maouque

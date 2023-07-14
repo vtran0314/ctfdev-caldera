@@ -20,7 +20,7 @@ export default function Home() {
 
 
   const handleButtonClick = async () => {
-    const response = await fetch('http://localhost:5000/get_url');
+    const response = await fetch('http://localhost:5000/check-port');
     const data = await response.json();
     console.log(data.url);
     // alert(data.url);
@@ -38,7 +38,7 @@ export default function Home() {
       </Head>
         <main className={`${styles.main} ${inter.className}`}>
           <div className={styles.description}>
-              <h1>Maouque-CTF&nbsp;</h1>
+              <h1>Caldera CTF Challenge&nbsp;</h1>
           </div>
           
           <div>

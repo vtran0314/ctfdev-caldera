@@ -1,0 +1,36 @@
+- requirements:
+  - module: plugins.stockpile.app.requirements.paw_provenance
+    relationship_match:
+    - source: host.malicious.file
+  name: Delete known suspicious files
+  technique_name: x
+  buckets:
+  - response
+  description: Use hash of known suspicious file to find instances of said file, and
+    delete instances
+  privilege: ''
+  executors:
+  - code: null
+    parsers: []
+    name: psh
+    variations: []
+    language: null
+    additional_info: {}
+    timeout: 60
+    build_target: null
+    platform: windows
+    uploads: []
+    payloads: []
+    command: 'Remove-Item -Path #{host.malicious.file} -Force;
+
+      Remove-Item C:\Users\Public\malicious_files.txt;'
+    cleanup: []
+  repeatable: false
+  tactic: response
+  additional_info: {}
+  plugin: response
+  delete_payload: true
+  access: {}
+  technique_id: x
+  singleton: false
+  id: 5ec7ae3b-c909-41bb-9b6b-dadec409cd40

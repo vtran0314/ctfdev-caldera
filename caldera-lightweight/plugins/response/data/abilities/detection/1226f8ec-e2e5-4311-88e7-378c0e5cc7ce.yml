@@ -1,0 +1,57 @@
+- buckets:
+  - detection
+  repeatable: false
+  additional_info: {}
+  access: {}
+  name: Suspicious URLs in mail
+  description: Finds suspicious URLs in received mail
+  requirements: []
+  privilege: ''
+  technique_id: x
+  delete_payload: true
+  tactic: detection
+  executors:
+  - cleanup: []
+    timeout: 60
+    language: null
+    code: null
+    uploads: []
+    additional_info: {}
+    name: sh
+    parsers:
+    - module: plugins.stockpile.app.parsers.basic
+      parserconfigs:
+      - source: remote.suspicious.url
+        edge: ''
+        custom_parser_vals: {}
+        target: ''
+    variations: []
+    build_target: null
+    payloads: []
+    platform: linux
+    command: find /var/mail -type f -exec grep "From.*@.*\..*" {} \; | cut -d'@' -f2
+      | cut -d' ' -f1 | sort --uniq
+  - cleanup: []
+    timeout: 60
+    language: null
+    code: null
+    uploads: []
+    additional_info: {}
+    name: sh
+    parsers:
+    - module: plugins.stockpile.app.parsers.basic
+      parserconfigs:
+      - source: remote.suspicious.url
+        edge: ''
+        custom_parser_vals: {}
+        target: ''
+    variations: []
+    build_target: null
+    payloads: []
+    platform: darwin
+    command: find /var/mail -type f -exec grep "From.*@.*\..*" {} \; | cut -d'@' -f2
+      | cut -d' ' -f1 | sort --uniq
+  plugin: response
+  technique_name: x
+  singleton: false
+  id: 1226f8ec-e2e5-4311-88e7-378c0e5cc7ce

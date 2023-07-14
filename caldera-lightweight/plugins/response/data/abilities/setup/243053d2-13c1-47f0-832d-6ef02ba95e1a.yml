@@ -1,0 +1,110 @@
+- buckets:
+  - setup
+  repeatable: false
+  additional_info: {}
+  access: {}
+  name: Backup Sensitive Directories
+  description: Create compressed backups of sensitive directories
+  requirements:
+  - module: plugins.response.app.requirements.source_fact
+    relationship_match:
+    - source: directory.sensitive.path
+  privilege: ''
+  technique_id: x
+  delete_payload: true
+  tactic: setup
+  executors:
+  - cleanup:
+    - "rm -rf /tmp/sensitive_file_backups;\ndir_path=$(echo \"#{directory.sensitive.path}\"\
+      \ | sed 's/\\\\\\*/\\*/g');\ndirectories=$(find $dir_path -maxdepth 0 -type\
+      \ d 2>/dev/null);\nfor directory in $directories;\n  do rm -f \"${directory}/.bak\"\
+      ;\ndone;"
+    timeout: 60
+    language: null
+    code: null
+    uploads: []
+    additional_info: {}
+    name: sh
+    parsers:
+    - module: plugins.response.app.parsers.key_value
+      parserconfigs:
+      - source: directory.sensitive.path
+        edge: has_backup
+        custom_parser_vals: {}
+        target: directory.sensitive.backup
+    variations: []
+    build_target: null
+    payloads: []
+    platform: linux
+    command: "mkdir -p /tmp/sensitive_file_backups;\ndir_path=$(echo \"#{directory.sensitive.path}\"\
+      \ | sed 's/\\\\\\*/\\*/g');\ndirectories=$(find $dir_path -maxdepth 0 -type\
+      \ d 2>/dev/null);\noutput=\"\";\nfor directory in $directories;\n  do if [ -z\
+      \ \"$(ls -A $directory)\" ]; then\n    touch \"${directory}/.bak\";\n  fi;\n\
+      \  randname=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 13);\n  tar -czf\
+      \ /tmp/sensitive_file_backups/${randname}.tar.gz -C $directory .;\n  output=\"\
+      ${output}${directory}>${randname}.tar.gz\\n\";\ndone;\necho $output | sed '/^[[:space:]]*$/d'"
+  - cleanup:
+    - "rm -rf /tmp/sensitive_file_backups;\ndir_path=$(echo \"#{directory.sensitive.path}\"\
+      \ | sed 's/\\\\\\*/\\*/g');\ndirectories=$(find $dir_path -maxdepth 0 -type\
+      \ d 2>/dev/null);\nfor directory in $directories;\n  do rm -f \"${directory}/.bak\"\
+      ;\ndone;"
+    timeout: 60
+    language: null
+    code: null
+    uploads: []
+    additional_info: {}
+    name: sh
+    parsers:
+    - module: plugins.response.app.parsers.key_value
+      parserconfigs:
+      - source: directory.sensitive.path
+        edge: has_backup
+        custom_parser_vals: {}
+        target: directory.sensitive.backup
+    variations: []
+    build_target: null
+    payloads: []
+    platform: darwin
+    command: "mkdir -p /tmp/sensitive_file_backups;\ndir_path=$(echo \"#{directory.sensitive.path}\"\
+      \ | sed 's/\\\\\\*/\\*/g');\ndirectories=$(find $dir_path -maxdepth 0 -type\
+      \ d 2>/dev/null);\noutput=\"\";\nfor directory in $directories;\n  do if [ -z\
+      \ \"$(ls -A $directory)\" ]; then\n    touch \"${directory}/.bak\";\n  fi;\n\
+      \  randname=$(head /dev/urandom | LC_CTYPE=C tr -dc A-Za-z0-9 | head -c 13);\n\
+      \  tar -czf /tmp/sensitive_file_backups/${randname}.tar.gz -C $directory .;\n\
+      \  output=\"${output}${directory}>${randname}.tar.gz\\n\";\ndone;\necho $output\
+      \ | sed '/^[[:space:]]*$/d'"
+  - cleanup:
+    - "Remove-Item -Recurse -Force C:\\Users\\Public\\sensitive_file_backups -EA silentlycontinue;\n\
+      Get-Item #{directory.sensitive.path} -EA silentlycontinue | Where-Object { $_\
+      \ -is [System.IO.DirectoryInfo] } | foreach-object {\n  Remove-Item -Force \"\
+      $($_.FullName)\\.bak\" -EA silentlycontinue;\n}"
+    timeout: 60
+    language: null
+    code: null
+    uploads: []
+    additional_info: {}
+    name: psh
+    parsers:
+    - module: plugins.response.app.parsers.key_value
+      parserconfigs:
+      - source: directory.sensitive.path
+        edge: has_backup
+        custom_parser_vals: {}
+        target: directory.sensitive.backup
+    variations: []
+    build_target: null
+    payloads: []
+    platform: windows
+    command: "New-Item -ItemType Directory -Force -Path C:\\Users\\Public\\sensitive_file_backups\
+      \ | Out-Null;\n$output = '';\nGet-Item #{directory.sensitive.path} -EA silentlycontinue\
+      \ | Where-Object { $_ -is [System.IO.DirectoryInfo] } | foreach-object {\n \
+      \ if ((Get-ChildItem $_.FullName -Force | Measure-Object).count -eq 0) {\n \
+      \   echo '' > $($_.FullName + \"\\.bak\");\n  };\n  $randname = -join (( 0x41..0x5A)\
+      \ + ( 0x61..0x7A) | Get-Random -Count 13 | % {[char]$_});\n  Compress-Archive\
+      \ -Force -Path $($_.FullName + \"\\*\") -DestinationPath $(\"C:\\Users\\Public\\\
+      sensitive_file_backups\\\" + $randname + \".zip\");\n  $output = \"$($output)$($_.FullName)>$($randname).zip`n\"\
+      ;\n};\n$output;"
+  plugin: response
+  technique_name: x
+  singleton: false
+  id: 243053d2-13c1-47f0-832d-6ef02ba95e1a

@@ -1,0 +1,85 @@
+- buckets:
+  - setup
+  repeatable: false
+  additional_info: {}
+  access: {}
+  name: Hash Sensitive Files
+  description: Acquire hashes of sensitive files as a baseline to check if they are
+    changed in the future
+  requirements:
+  - module: plugins.response.app.requirements.source_fact
+    relationship_match:
+    - source: file.sensitive.path
+  privilege: ''
+  technique_id: x
+  delete_payload: true
+  tactic: setup
+  executors:
+  - cleanup: []
+    timeout: 60
+    language: null
+    code: null
+    uploads: []
+    additional_info: {}
+    name: sh
+    parsers:
+    - module: plugins.response.app.parsers.key_value
+      parserconfigs:
+      - source: file.sensitive.path
+        edge: has_hash
+        custom_parser_vals: {}
+        target: file.sensitive.hash
+    variations: []
+    build_target: null
+    payloads: []
+    platform: linux
+    command: "output=\"\";\nfilepath=$(echo \"#{file.sensitive.path}\" | sed 's/\\\
+      \\\\*/\\*/g');\nfiles=$(find $filepath -maxdepth 0 -type f 2>/dev/null);\nfor\
+      \ file in $files;\n  do hash=$(sha256sum $file | cut -d' ' -f1);\n  output=\"\
+      ${output}${file}>${hash}\\n\";\ndone;\necho $output | sed '/^[[:space:]]*$/d'"
+  - cleanup: []
+    timeout: 60
+    language: null
+    code: null
+    uploads: []
+    additional_info: {}
+    name: sh
+    parsers:
+    - module: plugins.response.app.parsers.key_value
+      parserconfigs:
+      - source: file.sensitive.path
+        edge: has_hash
+        custom_parser_vals: {}
+        target: file.sensitive.hash
+    variations: []
+    build_target: null
+    payloads: []
+    platform: darwin
+    command: "output=\"\";\nfilepath=$(echo \"#{file.sensitive.path}\" | sed 's/\\\
+      \\\\*/\\*/g');\nfiles=$(find $filepath -maxdepth 0 -type f 2>/dev/null);\nfor\
+      \ file in $files;\n  do hash=$(shasum -a 256 $file | cut -d' ' -f1);\n  output=\"\
+      ${output}${file}>${hash}\\n\";\ndone;\necho $output | sed '/^[[:space:]]*$/d'"
+  - cleanup: []
+    timeout: 60
+    language: null
+    code: null
+    uploads: []
+    additional_info: {}
+    name: psh
+    parsers:
+    - module: plugins.response.app.parsers.key_value
+      parserconfigs:
+      - source: file.sensitive.path
+        edge: has_hash
+        custom_parser_vals: {}
+        target: file.sensitive.hash
+    variations: []
+    build_target: null
+    payloads: []
+    platform: windows
+    command: 'Get-FileHash #{file.sensitive.path} -EA silentlycontinue | foreach-object
+      {$_.Path + ''>'' + $_.Hash}'
+  plugin: response
+  technique_name: x
+  singleton: false
+  id: f313a0d7-2327-4f69-8da4-a6efd6135121

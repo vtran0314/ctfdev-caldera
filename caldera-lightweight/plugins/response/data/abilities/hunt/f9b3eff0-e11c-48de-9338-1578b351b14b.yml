@@ -1,0 +1,42 @@
+- buckets:
+  - hunt
+  repeatable: false
+  additional_info: {}
+  access: {}
+  name: Hunt for known suspicious files
+  description: Use hash of known suspicious file to find instances of said file on
+    hosts
+  requirements: []
+  privilege: ''
+  technique_id: x
+  delete_payload: true
+  tactic: hunt
+  executors:
+  - cleanup: []
+    timeout: 60
+    language: null
+    code: null
+    uploads: []
+    additional_info: {}
+    name: psh
+    parsers:
+    - module: plugins.response.app.parsers.basic_strip
+      parserconfigs:
+      - source: host.malicious.file
+        edge: ''
+        custom_parser_vals: {}
+        target: ''
+    variations: []
+    build_target: null
+    payloads: []
+    platform: windows
+    command: '$paths = (Get-ChildItem #{file.search.directory} -Recurse -EA:SilentlyContinue
+      | Get-FileHash -EA:SilentlyContinue |
+
+      Where-Object hash -eq #{file.malicious.hash} | foreach { $_.Path });
+
+      $paths;'
+  plugin: response
+  technique_name: x
+  singleton: false
+  id: f9b3eff0-e11c-48de-9338-1578b351b14b

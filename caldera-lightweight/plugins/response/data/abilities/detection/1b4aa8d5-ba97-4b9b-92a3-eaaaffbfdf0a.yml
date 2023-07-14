@@ -1,0 +1,75 @@
+- buckets:
+  - detection
+  repeatable: false
+  additional_info: {}
+  access: {}
+  name: Find atypical open ports
+  description: Compare open ports against a known baseline
+  requirements: []
+  privilege: ''
+  technique_id: T1065
+  delete_payload: true
+  tactic: detection
+  executors:
+  - cleanup: []
+    timeout: 60
+    language: null
+    code: null
+    uploads: []
+    additional_info: {}
+    name: psh
+    parsers:
+    - module: plugins.response.app.parsers.ports
+      parserconfigs:
+      - source: host.pid.unauthorized
+        edge: has_port
+        custom_parser_vals: {}
+        target: host.port.unauthorized
+    variations: []
+    build_target: null
+    payloads: []
+    platform: windows
+    command: "function getFullList($portList){\n    $final = @();\n    foreach ($p\
+      \ in $portList) {\n        if ($p -like \"*-*\") {\n            $minmax = $p.Split(\"\
+      -\");\n            for ($i = ($minmax[0] -as [int]); $i -lt ($minmax[1] -as\
+      \ [int]); $i++) {\n                $final += ($i -as [string]);\n          \
+      \  };\n        } else {\n            $final += $p;\n        };\n    };\n   \
+      \ return $final;\n};\n$basePorts = @(\"135\",\"139\",\"389\",\"445\",\"636\"\
+      ,\"1000-5000\",\"9389\",\"49152-65535\");\n$allPorts = getFullList $basePorts;\n\
+      $pidToPort = @();\nforeach ($port in (Get-NetTCPConnection -RemoteAddress 0.0.0.0\
+      \ -state Listen)){\n    if ($allPorts -notcontains $port.LocalPort){\n     \
+      \   $pidToPort += , @{pid=$port.OwningProcess;port=$port.LocalPort};\n    }\n\
+      };\n$pidToPort | ConvertTo-Json;"
+  - cleanup: []
+    timeout: 60
+    language: null
+    code: null
+    uploads: []
+    additional_info: {}
+    name: ' pwsh'
+    parsers:
+    - module: plugins.response.app.parsers.ports
+      parserconfigs:
+      - source: host.pid.unauthorized
+        edge: has_port
+        custom_parser_vals: {}
+        target: host.port.unauthorized
+    variations: []
+    build_target: null
+    payloads: []
+    platform: windows
+    command: "function getFullList($portList){\n    $final = @();\n    foreach ($p\
+      \ in $portList) {\n        if ($p -like \"*-*\") {\n            $minmax = $p.Split(\"\
+      -\");\n            for ($i = ($minmax[0] -as [int]); $i -lt ($minmax[1] -as\
+      \ [int]); $i++) {\n                $final += ($i -as [string]);\n          \
+      \  };\n        } else {\n            $final += $p;\n        };\n    };\n   \
+      \ return $final;\n};\n$basePorts = @(\"135\",\"139\",\"389\",\"445\",\"636\"\
+      ,\"1000-5000\",\"9389\",\"49152-65535\");\n$allPorts = getFullList $basePorts;\n\
+      $pidToPort = @();\nforeach ($port in (Get-NetTCPConnection -RemoteAddress 0.0.0.0\
+      \ -state Listen)){\n    if ($allPorts -notcontains $port.LocalPort){\n     \
+      \   $pidToPort += , @{pid=$port.OwningProcess;port=$port.LocalPort};\n    }\n\
+      };\n$pidToPort | ConvertTo-Json;"
+  plugin: response
+  technique_name: Uncommonly Used Port
+  singleton: false
+  id: 1b4aa8d5-ba97-4b9b-92a3-eaaaffbfdf0a
