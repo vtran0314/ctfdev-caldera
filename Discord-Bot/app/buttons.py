@@ -39,3 +39,9 @@ class SimpleView(discord.ui.View):
     async def Restart(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message("Restarting challenge")
         self.stop()
+    '''
+    #To-do:
+     *Change grey out all buttons on click to only grey out clicked button.
+     *This button should be tracked so that user can't choose the same button twice.
+     ** For example: if start clicked, the start should not be clicked twice, which lead to start same process multiple times
+    '''
